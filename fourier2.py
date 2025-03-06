@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def generate_random_shape(num_points=300, num_corners=10, amplitude=0.75, seed=None):
+def generate_random_shape(num_points=None, num_corners=None, amplitude=None, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
@@ -23,13 +23,11 @@ def generate_random_shape(num_points=300, num_corners=10, amplitude=0.75, seed=N
 
     return shape_points
 
-def compute_fourier_series(points, num_coeffs):
+def compute_fourier_series(points):
     N = len(points)
     fourier_coeffs = np.fft.fft(points) / N  # Normalize DFT
     frequencies = np.fft.fftfreq(N) * N  # Convert to integer frequencies
-    #indices = np.argsort(np.abs(frequencies))[:num_coeffs]  # Take the most relevant coefficients
     
-    #return fourier_coeffs[indices], frequencies[indices]
     return fourier_coeffs, frequencies
 
 
@@ -43,12 +41,12 @@ def reconstruct_shape(fourier_coeffs, frequencies, num_points):
     return reconstructed
 
 AMP = 0.8
-NUM_CORNERS = 10
-NUM_POINTS = 500
-NUM_COEFFS = 200
+NUM_CORNERS = 20
+NUM_POINTS = 200
+CUTOFF = int(NUM_POINTS / 2)
 
 polygon_points = generate_random_shape(num_points=NUM_POINTS, num_corners=NUM_CORNERS, amplitude=AMP, seed=None)
-fourier_coeffs, frequencies = compute_fourier_series(polygon_points, NUM_COEFFS)
+fourier_coeffs, frequencies = compute_fourier_series(polygon_points)
 reconstructed_points = reconstruct_shape(fourier_coeffs, frequencies, NUM_POINTS)
 
 # Plot original and reconstructed shape
@@ -62,27 +60,26 @@ plt.axis("equal")
 plt.title("Fourier Series Representation of a Smooth Closed-Loop Polygon")
 plt.show()
 
+
+
 plt.figure()
-reals = fourier_coeffs.real
+reals = fourier_coeffs[:CUTOFF].real
 for i,_ in enumerate(reals):
-    if reals[i] < 1e-10:
-        reals[i] = 0
-plt.scatter(frequencies, reals)
-print(f"Freqs: {len(frequencies)}")
-print(f"Real: {len(fourier_coeffs.real)}")
+    if reals[i] < 1e-7:
+        reals[i] = 1e-7
+plt.plot(frequencies[:CUTOFF], reals)
 plt.yscale("log")
 plt.title('Real Coeffs.')
 plt.grid()
 
 plt.figure()
-imags = fourier_coeffs.imag
+imags = fourier_coeffs[:CUTOFF].imag
 for i,_ in enumerate(imags):
-    if imags[i] < 1e-10:
-        imags[i] = 0
-plt.scatter(frequencies, imags)
-print(f"Freqs: {len(frequencies)}")
-print(f"Imag: {len(fourier_coeffs.imag)}")
+    if imags[i] < 1e-7:
+        imags[i] = 1e-7
+plt.plot(frequencies[:CUTOFF], imags)
 plt.yscale("log")
 plt.title('Imag. Coeffs.')
 plt.grid()
 plt.show()
+
