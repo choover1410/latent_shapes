@@ -5,15 +5,18 @@ import skfmm
 from burn import burn_grain
 import random
 
+
 def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_low=None, amp_high=None, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
     # Parameter t evenly spaced around the unit circle
-    t = np.linspace(0, 2*np.pi, num_points, endpoint=False)
+    rand_offset = random.randint(0, 1000)
+    rand_offset_radians = (rand_offset/1000) * (2*np.pi)
+    t = np.linspace(rand_offset_radians, 2*np.pi + rand_offset_radians, num_points, endpoint=False)
 
     # Generate piecewise random perturbations at fixed angles to create sharp edges
-    corner_angles = np.linspace(0, 2*np.pi, num_corners*2*num_sym, endpoint=False)
+    corner_angles = np.linspace(rand_offset_radians, 2*np.pi + rand_offset_radians, num_corners*2*num_sym, endpoint=False)
 
     corner_values = np.random.uniform((1-amp_low)*100, (1+amp_high)*100, num_corners)
     double_values = np.append(corner_values, corner_values[::-1]) # now symmetric
@@ -75,6 +78,26 @@ def complex_to_matrix(complex_array, grid_size):
     matrix[y_indices, x_indices] = 1  # Mark points in the matrix
     return matrix
 
+def resample_timeseries(data, num_points):
+    """
+    Resample a time series to a fixed number of points using linear interpolation.
+
+    Parameters:
+        data (list of float): The input time series data of variable length.
+        num_points (int): The desired number of points after resampling.
+
+    Returns:
+        np.ndarray: The resampled time series of length num_points.
+    """
+    if len(data) == 0 or num_points <= 0:
+        raise ValueError("Input data must be non-empty and num_points must be positive.")
+
+    x_original = np.linspace(0, 1, len(data))
+    x_resampled = np.linspace(0, 1, num_points)
+    resampled_data = np.interp(x_resampled, x_original, data)
+
+    return resampled_data
+
 def main():
     NUM_POINTS = 10000
     AMP_LOW = random.randint(5, 99) / 100
@@ -120,15 +143,17 @@ def main():
     plt.grid()
     plt.show()
     """
+    shape_size = random.randint(100, 800)
 
-    outline = complex_to_matrix(reconstructed_points, 500)
+    outline = complex_to_matrix(reconstructed_points, shape_size)
     filled_matrix = fill_shape(outline)
 
-
     N=50
-    W = random.randint(750, 2000)
-    shift_factor = (W - 500)//2
+    #W = random.randint(750, 2000)
+    W = 1250
+    shift_factor = (W - shape_size)//2
     X, Y = np.meshgrid(np.linspace(-1.0,1.0,W), np.linspace(-1.0,1.0,W))
+    print(f"Shape of X: {X.shape}")
 
     # Create initial geometry
     phi = 1 * np.ones_like(X)
@@ -138,9 +163,9 @@ def main():
                 phi[row + shift_factor, col + shift_factor] = 0
 
     integral_y, phi = burn_grain(X,Y,phi,N,1)
+    resampled = resample_timeseries(integral_y, 25)
 
-    # THE END
-    return phi, integral_y
+    return phi, resampled
 
 if __name__ == "__main__":
     main()
