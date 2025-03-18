@@ -4,6 +4,7 @@ from scipy.ndimage import binary_fill_holes
 import skfmm
 from burn import burn_grain
 import random
+from scipy.interpolate import interp1d
 
 
 def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_low=None, amp_high=None, seed=None):
@@ -98,8 +99,36 @@ def resample_timeseries(data, num_points):
 
     return resampled_data
 
+
+def generate_curve_image(y_points, width=124, height=124, output_file='curve_image.png'):
+    # Generate linearly spaced X values from 0 to 1
+    x = np.linspace(0, 1, len(y_points))
+    y = np.array(y_points)
+
+    # Interpolate to create a smooth curve
+    f = interp1d(x, y, kind='linear', fill_value='extrapolate')
+    x_new = np.linspace(0, 1, width)
+    y_new = f(x_new)
+
+    # Scale y_new to fit the image height without stretching
+    y_new = y_new * height
+    y_new = np.clip(y_new, 0, height - 1)
+
+    # Create an empty image
+    image = np.ones((height, width), dtype=np.uint8) * 255
+
+    # Fill below the curve with black
+    for i in range(width):
+        y_coord = int(height - y_new[i])  # Flip y-axis for image coordinates
+        image[y_coord:, i] = 0
+
+    # Save the image
+    plt.imsave(output_file, image, cmap='gray')
+    print(f'Image saved as {output_file}')
+
+
 def main():
-    NUM_POINTS = 10000
+    NUM_POINTS = 1000
     AMP_LOW = random.randint(5, 99) / 100
     AMP_HIGH = random.randint(5, 99) / 100
     NUM_CORNERS = random.randint(2, 6)
@@ -109,46 +138,48 @@ def main():
     fourier_coeffs, frequencies = compute_fourier_series(polygon_points)
     reconstructed_points = reconstruct_shape(fourier_coeffs, frequencies, NUM_POINTS)
 
-    """
-    CUTOFF = int(NUM_POINTS / 2)
-    # Plot original and reconstructed shape
-    plt.figure(figsize=(8, 8))
-    plt.plot(polygon_points.real, polygon_points.imag, 'rx', label="Original Shape", alpha=0.6)
-    plt.plot(reconstructed_points.real, reconstructed_points.imag, label="Reconstructed Shape", linewidth=2)
-    plt.scatter(fourier_coeffs.real, fourier_coeffs.imag, color="red", label="Fourier Coefficients", s=30)
-    plt.legend()
-    plt.grid()
-    plt.axis("equal")
-    plt.title("Fourier Series Representation of a Smooth Closed-Loop Polygon")
-    plt.show()
+    if True:
+        CUTOFF = int(NUM_POINTS / 2)
+        # Plot original and reconstructed shape
+        plt.figure(figsize=(8, 8))
+        plt.plot(polygon_points.real, polygon_points.imag, 'rx', label="Original Shape", alpha=0.6)
+        plt.plot(reconstructed_points.real, reconstructed_points.imag, label="Reconstructed Shape", linewidth=2)
+        plt.scatter(fourier_coeffs.real, fourier_coeffs.imag, color="red", label="Fourier Coefficients", s=30)
+        plt.legend()
+        plt.grid()
+        plt.axis("equal")
+        plt.title("Fourier Series Representation of a Smooth Closed-Loop Polygon")
+        plt.show()
 
-    plt.figure()
-    reals = fourier_coeffs[:CUTOFF].real
-    for i,_ in enumerate(reals):
-        if reals[i] < 1e-7:
-            reals[i] = 1e-7
-    plt.plot(frequencies[:CUTOFF], reals)
-    plt.yscale("log")
-    plt.title('Real Coeffs.')
-    plt.grid()
+        plt.figure()
+        reals = fourier_coeffs[:CUTOFF].real
+        for i,_ in enumerate(reals):
+            if reals[i] < 1e-7:
+                reals[i] = 1e-7
+        plt.plot(frequencies[:CUTOFF], reals)
+        plt.yscale("log")
+        plt.title('Real Coeffs.')
+        plt.grid()
 
-    plt.figure()
-    imags = fourier_coeffs[:CUTOFF].imag
-    for i,_ in enumerate(imags):
-        if imags[i] < 1e-7:
-            imags[i] = 1e-7
-    plt.plot(frequencies[:CUTOFF], imags)
-    plt.yscale("log")
-    plt.title('Imag. Coeffs.')
-    plt.grid()
-    plt.show()
-    """
+        plt.figure()
+        imags = fourier_coeffs[:CUTOFF].imag
+        for i,_ in enumerate(imags):
+            if imags[i] < 1e-7:
+                imags[i] = 1e-7
+        plt.plot(frequencies[:CUTOFF], imags)
+        plt.yscale("log")
+        plt.title('Imag. Coeffs.')
+        plt.grid()
+        plt.show()
+
+
+
     shape_size = random.randint(100, 800)
 
     outline = complex_to_matrix(reconstructed_points, shape_size)
     filled_matrix = fill_shape(outline)
 
-    N=50
+    N=100
     #W = random.randint(750, 2000)
     W = 1250
     shift_factor = (W - shape_size)//2
@@ -164,6 +195,12 @@ def main():
 
     integral_y, phi = burn_grain(X,Y,phi,N,1)
     resampled = resample_timeseries(integral_y, 25)
+
+    #plt.figure()
+    #plt.plot([i for i in range(len(resampled))], resampled)
+    #plt.show()
+
+    generate_curve_image(resampled)
 
     return phi, resampled
 
