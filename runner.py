@@ -1,4 +1,5 @@
 import matplotlib.image
+import matplotlib.pyplot as plt
 from fourier3 import main as fourier3
 import numpy as np
 import pickle
@@ -28,18 +29,10 @@ for i in range(10000):
 
     filled_matrix, integral_y = fourier3()
 
+    # Handle X
     int_filled_matrix = filled_matrix.astype(int)
-    
-    # Example usage
-    scaled_image = scale_down_matrix(int_filled_matrix, 512)
+    scaled_image = scale_down_matrix(int_filled_matrix, 1024)
+    plt.imsave(f'data/x_{now}.png', scaled_image, cmap='gray')
 
-    """
-    matplotlib.image.imsave(f'data/srm_{now}.png', scaled_image, cmap='gray')
-
-    with open(f'data/y_{now}.csv', 'w') as file:
-        for i, num in enumerate(integral_y):
-            if i < len(integral_y) - 1:
-                file.write(str(num) + '\n')
-            else:
-                file.write(str(num))"
-    """
+    # Handle Y
+    plt.imsave(f'data/y_{now}.png', integral_y, cmap='gray')

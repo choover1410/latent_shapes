@@ -11,13 +11,10 @@ def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_l
     if seed is not None:
         np.random.seed(seed)
 
-    # Parameter t evenly spaced around the unit circle
-    rand_offset = random.randint(0, 1000)
-    rand_offset_radians = (rand_offset/1000) * (2*np.pi)
-    t = np.linspace(rand_offset_radians, 2*np.pi + rand_offset_radians, num_points, endpoint=False)
+    t = np.linspace(0, 2*np.pi, num_points, endpoint=False)
 
     # Generate piecewise random perturbations at fixed angles to create sharp edges
-    corner_angles = np.linspace(rand_offset_radians, 2*np.pi + rand_offset_radians, num_corners*2*num_sym, endpoint=False)
+    corner_angles = np.linspace(0, 2*np.pi, num_corners*2*num_sym, endpoint=False)
 
     corner_values = np.random.uniform((1-amp_low)*100, (1+amp_high)*100, num_corners)
     double_values = np.append(corner_values, corner_values[::-1]) # now symmetric
@@ -100,7 +97,7 @@ def resample_timeseries(data, num_points):
     return resampled_data
 
 
-def generate_curve_image(y_points, width=124, height=124, output_file='curve_image.png'):
+def generate_curve_image(y_points, width=128, height=128):
     # Generate linearly spaced X values from 0 to 1
     x = np.linspace(0, 1, len(y_points))
     y = np.array(y_points)
@@ -123,22 +120,22 @@ def generate_curve_image(y_points, width=124, height=124, output_file='curve_ima
         image[y_coord:, i] = 0
 
     # Save the image
-    plt.imsave(output_file, image, cmap='gray')
-    print(f'Image saved as {output_file}')
+    return image
 
 
 def main():
-    NUM_POINTS = 1000
+    NUM_POINTS = 10000
     AMP_LOW = random.randint(5, 99) / 100
     AMP_HIGH = random.randint(5, 99) / 100
     NUM_CORNERS = random.randint(2, 6)
     NUM_SYM = random.randint(1, 5)
 
     polygon_points = generate_random_shape(num_sym=NUM_SYM, num_points=NUM_POINTS, num_corners=NUM_CORNERS,  amp_low=AMP_LOW, amp_high=AMP_HIGH, seed=None)
+    print(f"Running DFT on {len(polygon_points)} points.")
     fourier_coeffs, frequencies = compute_fourier_series(polygon_points)
     reconstructed_points = reconstruct_shape(fourier_coeffs, frequencies, NUM_POINTS)
 
-    if True:
+    if False:
         CUTOFF = int(NUM_POINTS / 2)
         # Plot original and reconstructed shape
         plt.figure(figsize=(8, 8))
@@ -153,25 +150,19 @@ def main():
 
         plt.figure()
         reals = fourier_coeffs[:CUTOFF].real
-        for i,_ in enumerate(reals):
-            if reals[i] < 1e-7:
-                reals[i] = 1e-7
-        plt.plot(frequencies[:CUTOFF], reals)
-        plt.yscale("log")
+        plt.plot(frequencies[:CUTOFF][:50], reals[:50])
+        plt.yscale("symlog")
         plt.title('Real Coeffs.')
         plt.grid()
 
         plt.figure()
         imags = fourier_coeffs[:CUTOFF].imag
-        for i,_ in enumerate(imags):
-            if imags[i] < 1e-7:
-                imags[i] = 1e-7
-        plt.plot(frequencies[:CUTOFF], imags)
-        plt.yscale("log")
+        plt.plot(frequencies[:CUTOFF][:50], imags[:50])
+        #plt.yscale("log")
         plt.title('Imag. Coeffs.')
         plt.grid()
-        plt.show()
 
+        plt.show()
 
 
     shape_size = random.randint(100, 800)
@@ -200,9 +191,9 @@ def main():
     #plt.plot([i for i in range(len(resampled))], resampled)
     #plt.show()
 
-    generate_curve_image(resampled)
+    scaled_image = generate_curve_image(resampled)
 
-    return phi, resampled
+    return phi, scaled_image
 
 if __name__ == "__main__":
     main()
