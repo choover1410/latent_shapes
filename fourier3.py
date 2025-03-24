@@ -16,14 +16,12 @@ def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_l
     # Generate piecewise random perturbations at fixed angles to create sharp edges
     corner_angles = np.linspace(0, 2*np.pi, num_corners*2*num_sym, endpoint=False)
 
-    corner_values = np.random.uniform((1-amp_low)*100, (1+amp_high)*100, num_corners)
+    corner_values = np.random.uniform((amp_low)*100, (1+amp_high)*100, num_corners)
+    max_corner = max(corner_values)
     double_values = np.append(corner_values, corner_values[::-1]) # now symmetric
     values = np.array([])
     for i in range(num_sym):
         values = np.append(values, double_values)
-
-    print(f"len values: {len(values)}")
-    print(f"len angles: {len(corner_angles)}")
 
     # Interpolate smoothly between sharp edges
     r = np.interp(t, corner_angles, values, period=2*np.pi)
@@ -33,7 +31,7 @@ def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_l
     y = r * np.sin(t)
     shape_points = x + 1j * y  # Complex representation
 
-    return shape_points
+    return shape_points, max_corner
 
 def compute_fourier_series(points):
     N = len(points)
@@ -77,16 +75,6 @@ def complex_to_matrix(complex_array, grid_size):
     return matrix
 
 def resample_timeseries(data, num_points):
-    """
-    Resample a time series to a fixed number of points using linear interpolation.
-
-    Parameters:
-        data (list of float): The input time series data of variable length.
-        num_points (int): The desired number of points after resampling.
-
-    Returns:
-        np.ndarray: The resampled time series of length num_points.
-    """
     if len(data) == 0 or num_points <= 0:
         raise ValueError("Input data must be non-empty and num_points must be positive.")
 
@@ -97,7 +85,7 @@ def resample_timeseries(data, num_points):
     return resampled_data
 
 
-def generate_curve_image(y_points, width=128, height=128):
+def generate_burnback_curve_image(y_points, width=128, height=128):
     # Generate linearly spaced X values from 0 to 1
     x = np.linspace(0, 1, len(y_points))
     y = np.array(y_points)
@@ -124,25 +112,23 @@ def generate_curve_image(y_points, width=128, height=128):
 
 
 def main():
-    NUM_POINTS = 500
-    AMP_LOW = random.randint(5, 99) / 100
-    AMP_HIGH = random.randint(5, 99) / 100
-    NUM_CORNERS = random.randint(2, 6)
-    NUM_SYM = random.randint(1, 5)
+    NUM_POINTS = 15000
+    AMP_LOW = random.randint(5, 50) / 100
+    AMP_HIGH = random.randint(60, 99) / 100
+    NUM_CORNERS = random.randint(2, 5)
+    NUM_SYM = random.randint(2, 5)
 
-    polygon_points = generate_random_shape(num_sym=NUM_SYM, num_points=NUM_POINTS, num_corners=NUM_CORNERS,  amp_low=AMP_LOW, amp_high=AMP_HIGH, seed=None)
+    polygon_points, max_corner_val = generate_random_shape(num_sym=NUM_SYM, num_points=NUM_POINTS, num_corners=NUM_CORNERS,  amp_low=AMP_LOW, amp_high=AMP_HIGH, seed=None)
     
-    reals = polygon_points.real
-    imags = polygon_points.imag
-    zipped = zip(reals, imags)
-    for x,y in zipped:
-        print(f"({x:.2f}, {y:.2f}),")
-    
-    print(f"Running DFT on {len(polygon_points)} points.")
     fourier_coeffs, frequencies = compute_fourier_series(polygon_points)
     reconstructed_points = reconstruct_shape(fourier_coeffs, frequencies, NUM_POINTS)
 
-    if True:
+    real_pts = polygon_points.real
+    imag_pts = polygon_points.imag
+
+
+    # Plotting for debugging
+    if False:
         CUTOFF = int(NUM_POINTS / 2)
         # Plot original and reconstructed shape
         plt.figure(figsize=(8, 8))
@@ -186,10 +172,9 @@ def main():
         plt.show()
 
 
-    shape_size = random.randint(100, 800)
+    shape_size = random.randint(300, 1000)
 
     outline = complex_to_matrix(reconstructed_points, shape_size)
-    print(outline)
     filled_matrix = fill_shape(outline)
 
     N=100
@@ -197,7 +182,6 @@ def main():
     W = 1250
     shift_factor = (W - shape_size)//2
     X, Y = np.meshgrid(np.linspace(-1.0,1.0,W), np.linspace(-1.0,1.0,W))
-    print(f"Shape of X: {X.shape}")
 
     # Create initial geometry
     phi = 1 * np.ones_like(X)
@@ -206,16 +190,11 @@ def main():
             if filled_matrix[row, col] == 1:
                 phi[row + shift_factor, col + shift_factor] = 0
 
-    integral_y, phi = burn_grain(X,Y,phi,N,1)
-    resampled = resample_timeseries(integral_y, 25)
+    integral_y, phi = burn_grain(X,Y,phi,N,1e-2)
+    resampled = resample_timeseries(integral_y, 50)
 
-    #plt.figure()
-    #plt.plot([i for i in range(len(resampled))], resampled)
-    #plt.show()
 
-    scaled_image = generate_curve_image(resampled)
-
-    return phi, scaled_image
+    return phi, resampled, real_pts, imag_pts, shape_size, max_corner_val
 
 if __name__ == "__main__":
     main()

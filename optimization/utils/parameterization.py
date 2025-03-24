@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 
-from compute_L_by_D import compute_L_by_D
-from progress_bar import print_progress_bar
+from .progress_bar import print_progress_bar
 
 
 def fit_catmullrom(X, num_control_pts: int):
