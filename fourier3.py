@@ -112,8 +112,11 @@ def generate_burnback_curve_image(y_points, width=128, height=128):
 
 
 def main():
-    NUM_POINTS = 15000
-    AMP_LOW = random.randint(5, 50) / 100
+    W = 600 # X Image size
+    N=100 # number of burn contours
+
+    NUM_POINTS = 8000
+    AMP_LOW = random.randint(5, 40) / 100
     AMP_HIGH = random.randint(60, 99) / 100
     NUM_CORNERS = random.randint(2, 5)
     NUM_SYM = random.randint(2, 5)
@@ -172,14 +175,11 @@ def main():
         plt.show()
 
 
-    shape_size = random.randint(300, 1000)
+    shape_size = random.randint(int(0.25*W), int(0.9*W))
 
     outline = complex_to_matrix(reconstructed_points, shape_size)
     filled_matrix = fill_shape(outline)
 
-    N=100
-    #W = random.randint(750, 2000)
-    W = 1250
     shift_factor = (W - shape_size)//2
     X, Y = np.meshgrid(np.linspace(-1.0,1.0,W), np.linspace(-1.0,1.0,W))
 
