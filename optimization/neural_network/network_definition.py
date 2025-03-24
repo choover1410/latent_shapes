@@ -12,7 +12,7 @@ class NeuralNetwork(nn.Module):
             layers.append(nn.Linear(hidden_dim, hidden_dim))
             layers.append(nn.ReLU())
             layers.append(nn.BatchNorm1d(hidden_dim))
-        layers.append(nn.Linear(hidden_dim, 1))
+        layers.append(nn.Linear(hidden_dim, 50))
 
         self.linear_relu_stack = nn.Sequential(*layers)
     

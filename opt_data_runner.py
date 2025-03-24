@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from fourier3 import main as fourier3
 from datetime import datetime
 
@@ -27,7 +28,16 @@ for i in range(10000):
     # For plotting/debug only
     X_fit = get_catmullrom_points(P_tensor.detach().reshape(-1, 2), num_sample_pts = 201).detach().numpy()
 
-    testing = True
+    #!!!!!!!!!!!!!!!
+    testing = False
+    train = False
+    #!!!!!!!!!!!!!!!
+
+    if train is True:
+        data_file_path = 'optimization/data/train_data.npz'
+    else:
+        data_file_path = 'optimization/data/validate_data.npz'
+
 
     if testing is True:
         num_points = 100
@@ -57,9 +67,34 @@ for i in range(10000):
         plt.show()
 
     if testing is False:
-        # Handle X
-        np.save(f'data/x_{now}.npy', P_tensor)
+        X_all = []
+        Y_all = []
 
+        try:
+            existing_data = np.load(data_file_path)
+            file_size_bytes = os.path.getsize(data_file_path)
+            print(f"Existing file size: {file_size_bytes/1024} KB")
 
-        # Handle Y
-        np.save(f'data/y_{now}.npy', y_timeseries)
+            existing_X = existing_data['X']
+            X_all.append(existing_X)
+            existing_Y = existing_data['Y']
+            Y_all.append(existing_Y)
+
+        except FileNotFoundError as e:
+            print(f"File not found, creating new file: {e}.")
+            existing_X = np.empty((0, 150, 2))
+            existing_Y = np.empty((0, 50))
+
+        # Append new data
+        X_all.append(P_tensor.numpy().reshape(1, 150, 2))   # Reshape to (1, 150, 2)
+        Y_all.append(y_timeseries.reshape(1, 50))           # Reshape to (1, 50)
+
+        X_all = np.vstack(X_all)
+        Y_all = np.vstack(Y_all)
+
+        # Store in a single data file
+        np.savez(
+            data_file_path,
+            X=X_all,
+            Y=Y_all
+        )

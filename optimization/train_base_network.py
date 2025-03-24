@@ -34,11 +34,11 @@ Must be numpy arrays with arrays:
 """
 
 # Get the training data
-train_filepath = 'data/generated_airfoils/train/airfoil_data_filtered.npz'
+train_filepath = 'data/train_data.npz'
 data_train = np.load(train_filepath)
 
 # Get the validation data
-dev_filepath = 'data/generated_airfoils/dev/original.npz'
+dev_filepath = 'data/validate_data.npz'
 data_dev = np.load(dev_filepath)
 
 # cuda cuda cuda
@@ -48,21 +48,25 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 count = 1348100 * 100
 
 # Massage training data X
-X_train = torch.from_numpy(data_train['P']).to(torch.float32)[:count].to(device)
+X_train = torch.from_numpy(data_train['X']).to(torch.float32)[:12].to(device)
+print(f"Shape of X_train: {X_train.shape}")
 
 # Massage training data Y
-Y_train = torch.from_numpy(data_train['L_by_D']).to(torch.float32).reshape(-1, 1)[:count].to(device)
+Y_train = torch.from_numpy(data_train['Y']).to(torch.float32).to(device)
+print(f"Shape of X_train: {Y_train.shape}")
 
 # Massage validation data X
-X_val = torch.from_numpy(data_dev['P']).to(torch.float32).to(device)
+X_val = torch.from_numpy(data_dev['X']).to(torch.float32).to(device)
+print(f"Shape of X_val: {X_val.shape}")
 
 # Massage validation data Y
-Y_val = torch.from_numpy(data_dev['L_by_D']).to(torch.float32).reshape(-1, 1).to(device)
+Y_val = torch.from_numpy(data_dev['Y']).to(torch.float32).to(device)
+print(f"Shape of Y_Val: {Y_val.shape}")
 
 
 # Initialize the burn network (to be trained)
 torch.manual_seed(0)
-input_dim, hidden_dim, layer_count = 24, 300, 10
+input_dim, hidden_dim, layer_count = 300, 300, 10
 burn_network = NeuralNetwork(input_dim, hidden_dim, layer_count).to(device)
 
 
@@ -91,6 +95,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.99)
 epochs = 5000
 print_cost_every = 1
 B_train = X_train.shape[0] // 10 # batch size for training data
+B_train = 2
 B_val = X_val.shape[0]  # batch size for validation data (must be 1 for validation data)
 
 

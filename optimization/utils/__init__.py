@@ -22,7 +22,6 @@ def train_loop(X_train, Y_train, B, model, loss_fn, optimizer, verbose = False, 
     # Convert each row of the reshaped tensor to a separate tensor and store them in a list
     batch_indices = [idx[i] for i in range(num_batches)]
 
-
     num_digits = len(str(num_batches))
     train_loss = 0
 
@@ -35,6 +34,8 @@ def train_loop(X_train, Y_train, B, model, loss_fn, optimizer, verbose = False, 
     # Run the training loop
     for batch in range(num_batches):
         X, Y = X_train[batch_indices[batch], :], Y_train[batch_indices[batch], :]
+        X = X.view(B, -1)
+        Y = Y.view(B, -1)
 
         # Use BF16 for faster compute
         if compute_optimizations == True:
@@ -83,6 +84,8 @@ def dev_loop(X_val, Y_val, B, model, loss_fn, verbose = False, compute_optimizat
     # Index the tensor with the permutation to shuffle the rows
     X_val = X_val[perm]
     Y_val = Y_val[perm]
+    X_val = X_val.view(B, -1)
+    Y_val = Y_val.view(B, -1)
 
     # Figure out the number of batches and the batch indices
     num_batches = N // B
