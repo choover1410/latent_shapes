@@ -29,10 +29,11 @@ for i in range(10000):
 
     filled_matrix, integral_y = fourier3()
 
-    # Handle X
-    int_filled_matrix = filled_matrix.astype(int)
-    scaled_image = scale_down_matrix(int_filled_matrix, 1024)
-    plt.imsave(f'data/x_{now}.png', scaled_image, cmap='gray')
+    if False:
+        # Handle X
+        int_filled_matrix = filled_matrix.astype(int)
+        scaled_image = scale_down_matrix(int_filled_matrix, 1024)
+        plt.imsave(f'data/x_{now}.png', scaled_image, cmap='gray')
 
-    # Handle Y
-    plt.imsave(f'data/y_{now}.png', integral_y, cmap='gray')
+        # Handle Y
+        plt.imsave(f'data/y_{now}.png', integral_y, cmap='gray')

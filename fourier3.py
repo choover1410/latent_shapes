@@ -38,7 +38,7 @@ def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_l
 def compute_fourier_series(points):
     N = len(points)
     fourier_coeffs = np.fft.fft(points) / N  # Normalize DFT
-    frequencies = np.fft.fftfreq(N) * N  # Convert to integer frequencies
+    frequencies = np.fft.fftfreq(N) * N # Convert to integer frequencies
     
     return fourier_coeffs, frequencies
 
@@ -124,18 +124,25 @@ def generate_curve_image(y_points, width=128, height=128):
 
 
 def main():
-    NUM_POINTS = 10000
+    NUM_POINTS = 500
     AMP_LOW = random.randint(5, 99) / 100
     AMP_HIGH = random.randint(5, 99) / 100
     NUM_CORNERS = random.randint(2, 6)
     NUM_SYM = random.randint(1, 5)
 
     polygon_points = generate_random_shape(num_sym=NUM_SYM, num_points=NUM_POINTS, num_corners=NUM_CORNERS,  amp_low=AMP_LOW, amp_high=AMP_HIGH, seed=None)
+    
+    reals = polygon_points.real
+    imags = polygon_points.imag
+    zipped = zip(reals, imags)
+    for x,y in zipped:
+        print(f"({x:.2f}, {y:.2f}),")
+    
     print(f"Running DFT on {len(polygon_points)} points.")
     fourier_coeffs, frequencies = compute_fourier_series(polygon_points)
     reconstructed_points = reconstruct_shape(fourier_coeffs, frequencies, NUM_POINTS)
 
-    if False:
+    if True:
         CUTOFF = int(NUM_POINTS / 2)
         # Plot original and reconstructed shape
         plt.figure(figsize=(8, 8))
@@ -145,29 +152,44 @@ def main():
         plt.legend()
         plt.grid()
         plt.axis("equal")
-        plt.title("Fourier Series Representation of a Smooth Closed-Loop Polygon")
         plt.show()
 
-        plt.figure()
         reals = fourier_coeffs[:CUTOFF].real
-        plt.plot(frequencies[:CUTOFF][:50], reals[:50])
-        plt.yscale("symlog")
-        plt.title('Real Coeffs.')
-        plt.grid()
+        imags = fourier_coeffs[:CUTOFF].imag
+
+        # Plot components (real, imag)
+
 
         plt.figure()
-        imags = fourier_coeffs[:CUTOFF].imag
-        plt.plot(frequencies[:CUTOFF][:50], imags[:50])
-        #plt.yscale("log")
-        plt.title('Imag. Coeffs.')
+        magnitudes = []
+        for i in range(len(reals)):
+            mag = np.sqrt(reals[i]**2 + imags[i]**2)
+            mag = mag / 200 # normalize by max radius
+            if mag < 1e-6:
+                mag = 1e-6
+            magnitudes.append(mag)
+        plt.plot(frequencies[:CUTOFF][:500], magnitudes[:500])
+        plt.yscale("log")
+        plt.title('DFT Mag')
         plt.grid()
 
+        # Plot phase
+        plt.figure()
+        phases = []
+        for i in range(len(reals)):
+            phase = np.arctan2(imags[i], reals[i])
+            phases.append(phase)
+        plt.plot(frequencies[:CUTOFF][:500], phases[:500])
+        plt.title('DFT Phase')
+        plt.grid()
+        
         plt.show()
 
 
     shape_size = random.randint(100, 800)
 
     outline = complex_to_matrix(reconstructed_points, shape_size)
+    print(outline)
     filled_matrix = fill_shape(outline)
 
     N=100
