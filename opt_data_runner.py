@@ -30,7 +30,7 @@ for i in range(10000):
 
     #!!!!!!!!!!!!!!!
     testing = False
-    train = False
+    train = True
     #!!!!!!!!!!!!!!!
 
     if train is True:

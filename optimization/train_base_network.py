@@ -5,6 +5,8 @@ import torch
 from torch import nn
 from neural_network.network_definition import NeuralNetwork
 from utils import train_loop, dev_loop
+import matplotlib.pyplot as plt
+
 
 """
 Training Set Coordinates -> Training Set Catmull-Rom Spline Params
@@ -33,6 +35,7 @@ Must be numpy arrays with arrays:
 
 """
 
+
 # Get the training data
 train_filepath = 'data/train_data.npz'
 data_train = np.load(train_filepath)
@@ -48,7 +51,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 count = 1348100 * 100
 
 # Massage training data X
-X_train = torch.from_numpy(data_train['X']).to(torch.float32)[:12].to(device)
+X_train = torch.from_numpy(data_train['X']).to(torch.float32).to(device)
 print(f"Shape of X_train: {X_train.shape}")
 
 # Massage training data Y
@@ -92,10 +95,10 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.99)
 
 
 # Set the training properties
-epochs = 5000
+epochs = 10000
 print_cost_every = 1
 B_train = X_train.shape[0] // 10 # batch size for training data
-B_train = 2
+B_train = 40
 B_val = X_val.shape[0]  # batch size for validation data (must be 1 for validation data)
 
 
@@ -109,6 +112,16 @@ else:
     total_epochs = 0
 
 
+# Plotting shit
+losses = []
+plt.ion()  # Turn on interactive mode
+fig, ax = plt.subplots()
+line, = ax.plot(losses, label="Loss")
+ax.set_xlabel("Epoch")
+ax.set_ylabel("Loss")
+ax.legend()
+
+
 # Train the burn network
 burn_network.train()
 for epoch in range(total_epochs + 1, total_epochs + epochs + 1):
@@ -117,13 +130,19 @@ for epoch in range(total_epochs + 1, total_epochs + epochs + 1):
     save = verbose
 
     # logging shenanigans
-    if verbose:
-        print(f"Epoch {epoch}\n" + 40 * '-')
-        print(scheduler.get_last_lr())
-        t0 = time.perf_counter()
+    print(f"Epoch {epoch}\n" + 40 * '-')
+    print(f"Learning Rate: {scheduler.get_last_lr()}")
+    t0 = time.perf_counter()
 
     # Run the training loop
     J_train = train_loop(X_train, Y_train, B_train, burn_network, MSELoss_fn, optimizer, verbose = verbose, compute_optimizations=compute_optimizations)
+    losses.append(J_train)
+    line.set_ydata(losses)
+    line.set_xdata(range(1, len(losses) + 1))
+    ax.relim()
+    ax.autoscale_view()
+    plt.draw()
+    plt.pause(0.01)  # Pause to update the plot
 
     # Run the validation loop
     J_val = dev_loop(X_val, Y_val, B_val, burn_network, MSELoss_fn, verbose, compute_optimizations=compute_optimizations)
@@ -134,7 +153,6 @@ for epoch in range(total_epochs + 1, total_epochs + epochs + 1):
         torch.cuda.synchronize()
         t1 = time.perf_counter()
         dt = (t1 - t0) * 1000 # Time difference in milliseconds
-        print(f'Time taken: {dt}')
 
     if save:
         # Create checkpoint and save the model
@@ -144,7 +162,20 @@ for epoch in range(total_epochs + 1, total_epochs + epochs + 1):
             'optimizer': optimizer.state_dict(),
         }
         # Save the model twice: once on its own and once in the latest model file
-        torch.save(checkpoint, f'checkpoints/burn_network_Epoch_{epoch}_Jtrain{J_train:.3e}_Jval_{J_val:.3e}.pth')
-        torch.save(checkpoint, f'checkpoints/latest.pth')
+        #torch.save(checkpoint, f'checkpoints/burn_network_Epoch_{epoch}_Jtrain{J_train:.3e}_Jval_{J_val:.3e}.pth')
+        #torch.save(checkpoint, f'checkpoints/latest.pth')
 
+
+checkpoint = {
+    'total_epochs': epoch,
+    'model': burn_network.state_dict(),
+    'optimizer': optimizer.state_dict(),
+}
+# Save the model twice: once on its own and once in the latest model file
+torch.save(checkpoint, f'checkpoints/burn_network_Epoch_{epoch}_Jtrain{J_train:.3e}_Jval_{J_val:.3e}.pth')
+torch.save(checkpoint, f'checkpoints/latest.pth')
+
+
+plt.ioff()
+plt.show()
 print('Finished Training!')

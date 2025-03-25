@@ -64,12 +64,10 @@ def train_loop(X_train, Y_train, B, model, loss_fn, optimizer, verbose = False, 
         if verbose:
             if batch % print_cost_every == 0:
                 loss = loss.item()
-                print(f'Train Loss: [{batch + 1:{num_digits}}/{num_batches}] {loss:20.6f}')
     
     train_loss = train_loss / num_batches
     if verbose:
         print(f'Avg. Train Loss: {train_loss:20.6f}')
-        print()
     
     return train_loss
 
