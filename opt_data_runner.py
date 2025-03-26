@@ -13,7 +13,6 @@ for i in range(10000):
     now = now.replace('.', '')
 
     phi, y_timeseries, real_pts, imag_pts, shape_size, max_corner_val = fourier3()
-
     # TODO this aint quite right
     # after fixing, need to then scale by ([shape_size] / 1250)
     real_pts = real_pts / max_corner_val * (shape_size / 1250)
@@ -29,7 +28,7 @@ for i in range(10000):
     X_fit = get_catmullrom_points(P_tensor.detach().reshape(-1, 2), num_sample_pts = 201).detach().numpy()
 
     #!!!!!!!!!!!!!!!
-    testing = False
+    testing = True
     train = True
     #!!!!!!!!!!!!!!!
 
