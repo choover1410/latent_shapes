@@ -26,6 +26,9 @@ def generate_random_shape(num_sym=None, num_points=None, num_corners=None, amp_l
     # Interpolate smoothly between sharp edges
     r = np.interp(t, corner_angles, values, period=2*np.pi)
 
+    #print(f"t: {t.shape}")
+    #print(f"r: {r.shape}")
+
     # Convert to complex points
     x = r * np.cos(t)
     y = r * np.sin(t)
@@ -116,10 +119,10 @@ def main():
     N=100 # number of burn contours
 
     NUM_POINTS = 8000
-    AMP_LOW = random.randint(5, 40) / 100
-    AMP_HIGH = random.randint(60, 99) / 100
-    NUM_CORNERS = random.randint(2, 5)
-    NUM_SYM = random.randint(2, 5)
+    AMP_LOW = random.randint(20, 40) / 100
+    AMP_HIGH = random.randint(60, 75) / 100
+    NUM_CORNERS = random.randint(2, 4)
+    NUM_SYM = random.randint(3, 5)
 
     polygon_points, max_corner_val = generate_random_shape(num_sym=NUM_SYM, num_points=NUM_POINTS, num_corners=NUM_CORNERS,  amp_low=AMP_LOW, amp_high=AMP_HIGH, seed=None)
     
@@ -175,6 +178,7 @@ def main():
         plt.show()
 
 
+    # Everything below here is for the burnback curve
     shape_size = random.randint(int(0.25*W), int(0.9*W))
 
     outline = complex_to_matrix(reconstructed_points, shape_size)
@@ -183,7 +187,6 @@ def main():
     shift_factor = (W - shape_size)//2
     X, Y = np.meshgrid(np.linspace(-1.0,1.0,W), np.linspace(-1.0,1.0,W))
 
-    # Create initial geometry
     phi = 1 * np.ones_like(X)
     for row in range(len(filled_matrix)):
         for col in range(len(filled_matrix)):
