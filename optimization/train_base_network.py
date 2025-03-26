@@ -69,7 +69,7 @@ print(f"Shape of Y_Val: {Y_val.shape}")
 
 # Initialize the burn network (to be trained)
 torch.manual_seed(0)
-input_dim, hidden_dim, layer_count = 300, 300, 10
+input_dim, hidden_dim, layer_count = 300, 1000, 20
 burn_network = NeuralNetwork(input_dim, hidden_dim, layer_count).to(device)
 
 
